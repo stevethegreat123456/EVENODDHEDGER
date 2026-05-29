@@ -7,6 +7,9 @@ export interface MarketData {
   currentDigit: number;
   streak: number;
   streakHistory: number[];
+  history1kCount?: number;
+  history1kEvens?: number;
+  history1kOdds?: number;
 }
 
 export interface Trade {
@@ -38,6 +41,7 @@ export interface Settings {
   targetStreak: number;
   takeProfit: number;
   stopLoss: number;
+  maxDrawdown: number;
   useSchedule: boolean;
   startTime: string;
   stopTime: string;
@@ -73,6 +77,14 @@ interface AppState {
   setLastLostSymbol: (symbol: string | null) => void;
   isWaitingForRecovery: boolean;
   setIsWaitingForRecovery: (isWaiting: boolean) => void;
+  cycleActive: boolean;
+  setCycleActive: (active: boolean) => void;
+  nextEvenStake: number;
+  setNextEvenStake: (stake: number) => void;
+  nextOddStake: number;
+  setNextOddStake: (stake: number) => void;
+  cycleNetPnL: number;
+  setCycleNetPnL: (pnl: number) => void;
 }
 
 export const useStore = create<AppState>()((set) => ({
@@ -86,6 +98,7 @@ export const useStore = create<AppState>()((set) => ({
     targetStreak: 3,
     takeProfit: 10,
     stopLoss: 20,
+    maxDrawdown: 50,
     useSchedule: false,
     startTime: '08:00',
     stopTime: '17:00'
@@ -221,5 +234,13 @@ export const useStore = create<AppState>()((set) => ({
   lastLostSymbol: null,
   setLastLostSymbol: (symbol) => set({ lastLostSymbol: symbol }),
   isWaitingForRecovery: false,
-  setIsWaitingForRecovery: (isWaiting) => set({ isWaitingForRecovery: isWaiting })
+  setIsWaitingForRecovery: (isWaiting) => set({ isWaitingForRecovery: isWaiting }),
+  cycleActive: false,
+  setCycleActive: (active) => set({ cycleActive: active }),
+  nextEvenStake: 0.35,
+  setNextEvenStake: (stake) => set({ nextEvenStake: stake }),
+  nextOddStake: 0.35,
+  setNextOddStake: (stake) => set({ nextOddStake: stake }),
+  cycleNetPnL: 0,
+  setCycleNetPnL: (pnl) => set({ cycleNetPnL: pnl })
 }));

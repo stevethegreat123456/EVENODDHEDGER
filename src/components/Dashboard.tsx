@@ -53,6 +53,18 @@ export function Dashboard() {
       if (data.isWaitingForRecovery !== undefined) {
          useStore.getState().setIsWaitingForRecovery(data.isWaitingForRecovery);
       }
+      if (data.cycleActive !== undefined) {
+         useStore.getState().setCycleActive(data.cycleActive);
+      }
+      if (data.nextEvenStake !== undefined) {
+         useStore.getState().setNextEvenStake(data.nextEvenStake);
+      }
+      if (data.nextOddStake !== undefined) {
+         useStore.getState().setNextOddStake(data.nextOddStake);
+      }
+      if (data.cycleNetPnL !== undefined) {
+         useStore.getState().setCycleNetPnL(data.cycleNetPnL);
+      }
       if (data.currentSettings !== undefined && data.currentSettings !== null) {
          const localSettings = useStore.getState().settings;
          if (JSON.stringify(localSettings) !== JSON.stringify(data.currentSettings)) {

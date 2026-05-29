@@ -14,6 +14,11 @@ interface MarketState {
   oddStreak: number;
   history: Int8Array;
   historyIndex: number;
+  history1k: Int8Array;
+  history1kIndex: number;
+  history1kCount: number;
+  history1kEvens: number;
+  history1kOdds: number;
 }
 
 const markets = ['R_100']; // Only R_100
@@ -28,7 +33,12 @@ markets.forEach(symbol => {
     evenStreak: 0,
     oddStreak: 0,
     history: new Int8Array(HISTORY_SIZE).fill(-1),
-    historyIndex: 0
+    historyIndex: 0,
+    history1k: new Int8Array(1000).fill(-1),
+    history1kIndex: 0,
+    history1kCount: 0,
+    history1kEvens: 0,
+    history1kOdds: 0
   };
 });
 
@@ -114,11 +124,11 @@ async function saveTrade(tradeEvent: any) {
   try {
     const supabase = getSupabase();
     if (!supabase) return;
-    const { error } = await supabase.from('bot_trades').insert({
+    const { error } = await supabase.from('trades').insert({
       id: tradeEvent.id,
       market: tradeEvent.market || 'UNKNOWN',
       buy_price: tradeEvent.buyPrice || 0,
-      timestamp: tradeEvent.timestamp || Date.now(),
+      timestamp: tradeEvent.timestamp ? new Date(tradeEvent.timestamp).toISOString() : new Date().toISOString(),
       result: tradeEvent.result,
       pnl: tradeEvent.pnl,
       entry_tick: tradeEvent.entryTick,
@@ -246,7 +256,6 @@ function connect() {
       }
       ws?.send('{"balance":1,"subscribe":1}');
       subscribeToTicks();
-      ws?.send('{"proposal_open_contract":1,"subscribe":1}');
     }
 
     if (data.msg_type === 'balance') {
@@ -256,6 +265,10 @@ function connect() {
 
     if (data.msg_type === 'tick') {
       handleTick(data.tick);
+    }
+
+    if (data.msg_type === 'history') {
+      handleHistory(data.history, data.echo_req, data.pip_size);
     }
 
     if (data.msg_type === 'buy') {
@@ -282,8 +295,69 @@ function connect() {
 
 function subscribeToTicks() {
   markets.forEach(symbol => {
-    ws?.send(JSON.stringify({ ticks: symbol }));
+    ws?.send(JSON.stringify({ 
+      ticks_history: symbol,
+      end: "latest",
+      count: 1000,
+      style: "ticks",
+      subscribe: 1
+    }));
   });
+}
+
+function handleHistory(history: any, echo_req: any, pipSize: number) {
+  const symbol = echo_req.ticks_history;
+  const state = marketStates[symbol];
+  if (!state || !history || !history.prices) return;
+
+  const prices = history.prices;
+  const pSize = pipSize || 2;
+  const multiplier = Math.pow(10, pSize);
+
+  state.history1kCount = 0;
+  state.history1kEvens = 0;
+  state.history1kOdds = 0;
+  state.history1k.fill(-1);
+  state.history1kIndex = 0;
+
+  state.history.fill(-1);
+  state.historyIndex = 0;
+
+  let currentEvenStreak = 0;
+  let currentOddStreak = 0;
+
+  for (let i = 0; i < prices.length; i++) {
+    const price = prices[i];
+    const digit = Math.round(price * multiplier) % 10;
+    
+    state.history1k[state.history1kIndex] = digit;
+    if (digit % 2 === 0) {
+        state.history1kEvens++;
+        currentEvenStreak++;
+        currentOddStreak = 0;
+    } else {
+        state.history1kOdds++;
+        currentOddStreak++;
+        currentEvenStreak = 0;
+    }
+    
+    state.history1kCount++;
+    state.history1kIndex = (state.history1kIndex + 1) % 1000;
+
+    // Fill the 50-tick history for purely visual display
+    // Only add the last 50 items to keep order
+    if (i >= prices.length - 50) {
+        state.history[state.historyIndex] = digit;
+        state.historyIndex = (state.historyIndex + 1) % 50;
+    }
+  }
+
+  // Also set streak state from the history
+  state.evenStreak = currentEvenStreak;
+  state.oddStreak = currentOddStreak;
+  state.streak = Math.max(state.evenStreak, state.oddStreak);
+  
+  queueUpdate(symbol, state);
 }
 
 function handleTick(tickInfo: any) {
@@ -342,6 +416,20 @@ function handleTick(tickInfo: any) {
   state.history[state.historyIndex] = digit;
   state.historyIndex = (state.historyIndex + 1) % HISTORY_SIZE;
 
+  // Track 1000 history
+  const old1kDigit = state.history1k[state.history1kIndex];
+  if (old1kDigit !== -1) {
+    if (old1kDigit % 2 === 0) state.history1kEvens--;
+    else state.history1kOdds--;
+  } else {
+    state.history1kCount++;
+  }
+  
+  state.history1k[state.history1kIndex] = digit;
+  if (digit % 2 === 0) state.history1kEvens++;
+  else state.history1kOdds++;
+  state.history1kIndex = (state.history1kIndex + 1) % 1000;
+
   queueUpdate(symbol, state);
 }
 
@@ -366,7 +454,10 @@ function queueUpdate(symbol: string, state: MarketState) {
     currentPrice: state.price,
     currentDigit: state.digit,
     streak: state.streak,
-    streakHistory: unwrappedHistory
+    streakHistory: unwrappedHistory,
+    history1kCount: state.history1kCount,
+    history1kEvens: state.history1kEvens,
+    history1kOdds: state.history1kOdds
   };
 
   if (!batchTimeout) {
@@ -386,7 +477,7 @@ function executeBuyAsymmetric(symbol: string, contractType: string, stake: numbe
   
   reqIdToData[reqId] = { symbol, type: contractType };
 
-  const rawPayloadString = `{"buy":1,"price":${stake},"parameters":{"amount":${stake},"basis":"stake","contract_type":"${contractType}","currency":"USD","duration":1,"duration_unit":"t","symbol":"${symbol}"},"req_id":${reqId}}`;
+  const rawPayloadString = `{"buy":1,"price":${stake},"parameters":{"amount":${stake},"basis":"stake","contract_type":"${contractType}","currency":"USD","duration":1,"duration_unit":"t","symbol":"${symbol}"},"subscribe":1,"req_id":${reqId}}`;
   
   ws.send(rawPayloadString);
 
@@ -480,12 +571,13 @@ function handleContractUpdate(contract: any) {
   const entryDigit = entryTickStr ? parseInt(entryTickStr.slice(-1), 10) : undefined;
   const exitDigit = exitTickStr ? parseInt(exitTickStr.slice(-1), 10) : undefined;
 
+  const timestamp = contract.date_start ? contract.date_start * 1000 : Date.now();
   postMessage({
     type: 'TRADE_RESULT',
     id: customId,
     market: symbol,
     buyPrice: contract.buy_price || globalCurrentStake,
-    timestamp: contract.date_start ? contract.date_start * 1000 : Date.now(),
+    timestamp: timestamp,
     result: isWin ? 'won' : 'lost',
     pnl: pnl,
     entryTick: entryTickStr,
@@ -532,7 +624,25 @@ function handleContractUpdate(contract: any) {
         postMessage({ type: 'SCHEDULE_STOP' });
       }
     } else {
-      lastLostSymbol = symbol;
+      if (cycleNetPnL <= -currentSettings.maxDrawdown) {
+          cycleActive = false;
+          const state = marketStates[symbol];
+          if (state) {
+              state.evenStreak = 0;
+              state.oddStreak = 0;
+              state.streak = 0;
+          }
+          nextEvenStake = Math.max(0.35, currentSettings.globalStake);
+          nextOddStake = Math.max(0.35, currentSettings.globalStake);
+          
+          if (stopScheduledAndWaitingForRecovery) {
+            isRunning = false;
+            stopScheduledAndWaitingForRecovery = false;
+            postMessage({ type: 'SCHEDULE_STOP' });
+          }
+      } else {
+          lastLostSymbol = symbol;
+      }
     }
     
     batchPnL = 0;
@@ -564,6 +674,10 @@ function handleContractUpdate(contract: any) {
         lastLostSymbol,
         isWaitingForRecovery: stopScheduledAndWaitingForRecovery,
         isTradeActive: cycleActive,
+        cycleActive,
+        nextEvenStake,
+        nextOddStake,
+        cycleNetPnL,
         connectionStatus: isReady ? 'connected' : 'disconnected'
     });
   }
@@ -620,7 +734,7 @@ export function startBotEngine(io: Server) {
     // Fetch past trades
     const supabase = getSupabase();
     if (supabase) {
-      supabase.from('bot_trades').select('*').order('created_at', { ascending: false }).limit(50).then(({ data }) => {
+      supabase.from('trades').select('*').order('created_at', { ascending: false }).limit(50).then(({ data }) => {
         if (data && data.length > 0) {
            const pastTrades = data.reverse().map(t => ({
              type: 'TRADE_RESULT',
@@ -655,7 +769,7 @@ export function startBotEngine(io: Server) {
             connectionStatus: isReady ? 'connected' : 'disconnected'
         });
         if (supabase) {
-          supabase.from('bot_trades').select('*').order('created_at', { ascending: false }).limit(50).then(({ data: tradeData }) => {
+          supabase.from('trades').select('*').order('created_at', { ascending: false }).limit(50).then(({ data: tradeData }) => {
             if (tradeData && tradeData.length > 0) {
                const pastTrades = tradeData.reverse().map(t => ({
                  type: 'TRADE_RESULT',

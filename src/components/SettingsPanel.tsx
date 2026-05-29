@@ -16,6 +16,7 @@ export function SettingsPanel() {
       targetStreak: Number(fd.get('targetStreak')),
       takeProfit: Number(fd.get('takeProfit')),
       stopLoss: Number(fd.get('stopLoss')),
+      maxDrawdown: Number(fd.get('maxDrawdown')),
       useSchedule: fd.get('useSchedule') === 'on',
       startTime: (fd.get('startTime') as string) || '08:00',
       stopTime: (fd.get('stopTime') as string) || '17:00',
@@ -77,6 +78,16 @@ export function SettingsPanel() {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
+                  <label className="text-[10px] uppercase text-[#a1a1aa] font-semibold tracking-widest">Max Cycle DD ($)</label>
+                  <input 
+                    type="number" 
+                    name="maxDrawdown"
+                    defaultValue={settings.maxDrawdown}
+                    className="w-full bg-black/30 border border-amber-900 border-dashed text-amber-500 px-3 py-2 outline-none text-right font-mono text-[12px] rounded focus:border-amber-500 bg-amber-950/20"
+                    required
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
                   <label className="text-[10px] uppercase text-[#a1a1aa] font-semibold tracking-widest">Take Profit ($)</label>
                   <input 
                     type="number" 
@@ -87,12 +98,12 @@ export function SettingsPanel() {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[10px] uppercase text-[#a1a1aa] font-semibold tracking-widest">Stop Loss ($)</label>
+                  <label className="text-[10px] uppercase text-[#a1a1aa] font-semibold tracking-widest">Hard Stop Loss ($)</label>
                   <input 
                     type="number" 
                     name="stopLoss"
                     defaultValue={settings.stopLoss}
-                    className="w-full bg-black/30 border border-[#27272a] text-[#00ff9c] px-3 py-2 outline-none text-right font-mono text-[12px] rounded focus:border-[#00ff9c]"
+                    className="w-full bg-black/30 border border-red-900 text-red-500 px-3 py-2 outline-none text-right font-mono text-[12px] rounded focus:border-red-500 bg-red-950/20"
                     required
                   />
                 </div>
