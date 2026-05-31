@@ -1,5 +1,5 @@
 {
-  "name": "Remix: Remix: Deriv HF Bot even odd",
+  "name": "hedgerv100",
   "description": "High-frequency trading bot for Deriv synthetic indices.",
   "requestFramePermissions": [
     "screen-wake-lock"
