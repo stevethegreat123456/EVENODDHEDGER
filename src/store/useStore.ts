@@ -108,16 +108,18 @@ export const useStore = create<AppState>()((set) => ({
   isRunning: false,
   setIsRunning: (run) => set({ isRunning: run }),
   markets: {
-    '1HZ10V': { symbol: '1HZ10V', name: 'Vol 10 (1s) Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
-    '1HZ25V': { symbol: '1HZ25V', name: 'Vol 25 (1s) Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
-    '1HZ50V': { symbol: '1HZ50V', name: 'Vol 50 (1s) Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
-    '1HZ75V': { symbol: '1HZ75V', name: 'Vol 75 (1s) Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
-    '1HZ100V': { symbol: '1HZ100V', name: 'Vol 100 (1s) Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
     'R_10': { symbol: 'R_10', name: 'Volatility 10 Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
     'R_25': { symbol: 'R_25', name: 'Volatility 25 Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
     'R_50': { symbol: 'R_50', name: 'Volatility 50 Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
     'R_75': { symbol: 'R_75', name: 'Volatility 75 Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
-    'R_100': { symbol: 'R_100', name: 'Volatility 100 Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] }
+    'R_100': { symbol: 'R_100', name: 'Volatility 100 Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
+    'RDBEAR': { symbol: 'RDBEAR', name: 'Bear Market Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
+    'RDBULL': { symbol: 'RDBULL', name: 'Bull Market Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
+    'JD10': { symbol: 'JD10', name: 'Jump 10 Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
+    'JD25': { symbol: 'JD25', name: 'Jump 25 Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
+    'JD50': { symbol: 'JD50', name: 'Jump 50 Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
+    'JD75': { symbol: 'JD75', name: 'Jump 75 Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] },
+    'JD100': { symbol: 'JD100', name: 'Jump 100 Index', currentPrice: 0, currentDigit: 0, streak: 0, streakHistory: [] }
   },
   updateMarket: (symbol, data) =>
     set((state) => ({
