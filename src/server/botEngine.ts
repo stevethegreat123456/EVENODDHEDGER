@@ -127,7 +127,7 @@ async function saveTrade(tradeEvent: any) {
   try {
     const supabase = getSupabase();
     if (!supabase) return;
-    const { error } = await supabase.from('trades').insert({
+    const { error } = await supabase.from('trades').upsert({
       id: tradeEvent.id,
       market: tradeEvent.market || 'UNKNOWN',
       buy_price: tradeEvent.buyPrice || 0,
